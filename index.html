@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hacman Ball</title>
+  <link rel="stylesheet" href="bootstrap-3.1.1-dist/css/bootstrap.min.css">
+  <style type="text/css">
+    body {
+      margin: 0;
+    }
+    .container {
+      width: 500px;
+    }
+    .jumbotron small {
+      font-size: 30%;
+    }
+    .chara {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      vertical-align: middle;
+      background-image: url(img/chara0.png);
+      background-repeat: no-repeat;
+    }
+    .chara-hidden {
+      visibility: hidden;
+    }
+    .chara1 {
+      background-position: -32px 0;
+    }
+    .chara2 {
+      background-position: -64px 0;
+    }
+    .chara3 {
+      background-position: -96px 0;
+    }
+    .chara4 {
+      background-position: -128px 0;
+    }
+    .chara5 {
+      background-position: -160px 0;
+    }
+    .chara6 {
+      background-position: -192px 0;
+    }
+    .chara7 {
+      background-position: -224px 0;
+    }
+    .chara8 {
+      background-position: -256px 0;
+    }
+    .chara9 {
+      background-position: -288px 0;
+    }
+    .chara10 {
+      background-position: -320px 0;
+    }
+    .chara11 {
+      background-position: -352px 0;
+    }
+    .chara12 {
+      background-position: -384px 0;
+    }
+    .chara13 {
+      background-position: -416px 0;
+    }
+    .chara14 {
+      background-position: -448px 0;
+    }
+    .chara15 {
+      background-position: -480px 0;
+    }
+    .chara16 {
+      background-position: -512px 0;
+    }
+    #ui-chat {
+      position: absolute;
+      left: 768px;
+      top: 0;
+      z-index: 999;
+      display: none;
+      width: 300px;
+      height: 576px;
+      padding: 10px;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    #ui-chat-entry {
+    }
+
+    #ui-chat-list {
+      height: 500px;
+      padding: 15px;
+      overflow: scroll;
+      background-color: #fff;
+    }
+
+    #ui-chat-item {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="ui-signin">
+    <div class="jumbotron">
+      <h1>Hacman Ball<small>v0.1</small></h1>
+      <p>Please sign in</p>
+    </div>
+    <form class="form-signin" role="form" id="signin">
+      <div class="form-group">
+        <label for="signin-nickname">Nickname</label>
+        <input type="text" value="" id="signin-nickname" class="form-control" placeholder="Your nickname" required autofocus>
+      </div>
+      <div class="form-group">
+        <label>Select Charactor</label>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="radio" name="signin-chara[]" value="1" required> <i class="chara chara1"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="2" required> <i class="chara chara2"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="3" required> <i class="chara chara3"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="4" required> <i class="chara chara4"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="5" required> <i class="chara chara5"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="6" required> <i class="chara chara6"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="7" required> <i class="chara chara7"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="8" required> <i class="chara chara8"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="9" required> <i class="chara chara9"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="10" required> <i class="chara chara10"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="11" required> <i class="chara chara11"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="12" required> <i class="chara chara12"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="13" required> <i class="chara chara13"></i>
+        </label>
+        <label>
+          <input type="radio" name="signin-chara[]" value="14" required> <i class="chara chara14"></i>
+        </label>
+        <label class="chara-hidden">
+          <input type="radio" name="signin-chara[]" value="15" required> <i class="chara chara15"></i>
+        </label>
+        <label class="chara-hidden">
+          <input type="radio" name="signin-chara[]" value="16" required> <i class="chara chara16"></i>
+        </label>
+        <label class="chara-hidden">
+          <input type="radio" name="signin-chara[]" value="0" required> <i class="chara"></i>
+        </label>
+      </div>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Play</button>
+    </form>
+    <br>
+    <div class="alert alert-warning">
+      <h4>Usage</h4>
+      <p>Move: Cursor key (Left, Top, Right, Bottom)</p>
+    </div>
+    <!--
+    <div class="alert alert-warning">
+      <h4>Role</h4>
+      <p>* Get SuperPoint(R) to became Hacman. The Hacman can kill other user.</p>
+      <p>* The Hacman will change to other user when the user get SuperPoint(R).</p>
+    </div>
+    <div class="alert alert-warning">
+      <h4>Items</h4>
+      <p>* SuperPoint(R): It enable to kill users.</p>
+      <p>* Kobo: It enable to kick users</p>
+      <p>* FastTruck: Speed up</p>
+      <p>* Skull: Speed down/sick</p>
+      <p>* Drag: Heal sick</p>
+    </div>
+    -->
+  </div><!-- /container -->
+
+  <div id="ui-chat">
+    <div id="ui-chat-list"></div>
+    </div><!-- /input-group -->
+  </div>
+
+  <script type="text/template" id="ui-chat-item">
+    <% if (status === 'join') { %>
+      <p class="text-success">
+    <% } else if (status === 'leave') {  %>
+      <p class="text-warning">
+    <% } else if (status === 'killed') {  %>
+      <p class="text-danger">
+    <% } else { %>
+      <p>
+    <% } %>
+        <span class="label label-default"><%= new Date().getHours() %>:<%= new Date().getMinutes() %>:<%= new Date().getSeconds() %></span>
+        <%= msg %>
+    </p>
+  </script>
+
+  <!--<script src="http://VLB12-28:3000/socket.io/socket.io.js"></script>-->
+  <script src="http://localhost:33000/socket.io/socket.io.js"></script>
+  <script src="lib/enchant.js/enchant.min.js"></script>
+  <script src="js/common/hac.js"></script>
+  <script src="js/common/constants.js"></script>
+  <script src="js/common/utils.js"></script>
+  <script src="js/common/server.js"></script>
+  <script src="js/map/basemapData.js"></script>
+  <script src="js/map/basemap.js"></script>
+  <script src="js/sprite/comment.js"></script>
+  <script src="js/sprite/hacman.js"></script>
+  <script src="js/sprite/item.js"></script>
+  <script src="js/sprite/item.ball.js"></script>
+  <script src="js/sprite/end.js"></script>
+  <script src="js/cpu.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
