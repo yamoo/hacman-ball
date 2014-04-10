@@ -64,8 +64,8 @@ HAC.define('Server',[
             var pos;
 
             if (!itemData.x) {
-                pos = _this.gameMain.getRandomPos();
-                //pos = {x: _this.gameMain.map.width/2, y: _this.gameMain.map.height/2};
+                //pos = _this.gameMain.getRandomPos();
+                pos = {x: _this.gameMain.map.width/2, y: _this.gameMain.map.height/2};
 
                 itemData.x = pos.x;
                 itemData.y = pos.y;
@@ -80,6 +80,10 @@ HAC.define('Server',[
 
         _this.socket.on('removeItem', function (itemId) {
             _this.trigger('removeItem', itemId);
+        });
+
+        _this.socket.on('updateTeam', function (teamData) {
+            _this.trigger('updateTeam', teamData);
         });
 
         _this.socket.on('sendMessage', function (data) {
@@ -111,6 +115,11 @@ HAC.define('Server',[
     Server.prototype.loseUser = function(userId) {
         this.socket.emit('loseUser', userId);
         this.trigger('loseUser', userId);
+    };
+
+    Server.prototype.updateTeam = function(teamData) {
+        this.socket.emit('updateTeam', teamData);
+        this.trigger('updateTeam', teamData);
     };
 
     Server.prototype.sendMessage = function(data) {

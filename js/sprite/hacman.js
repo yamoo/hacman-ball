@@ -7,8 +7,8 @@ HAC.define('Hacman',[
     var Hacman, settings;
 
     settings = {
-        width: 32,
-        height: 32,
+        width: Const.world.tile,
+        height: Const.world.tile,
         speed: 8,
         itemPointSpeed: 20,
         velocity: 4,
@@ -32,6 +32,7 @@ HAC.define('Hacman',[
             this.charaId = options.charaId;
             this.score = options.score || 0;
             this.item = options.item || {};
+            this.team = options.team;
 
             this.message = options.message || '';
             this.messageTimer = null;
@@ -47,6 +48,13 @@ HAC.define('Hacman',[
             this.chara.image = this.game.assets[Const.assets['chara0']];
             this.chara.frame = this.chara.id;
 
+            this.uniform = new Label();
+            this.uniform.font = '30px sans-serif';
+            this.uniform.x = -15;
+            this.uniform.y = -15;
+            this.uniform.text = '●';
+            this.uniform.color = this.team.color;
+
             this.label = new Label();
             this.label.font = '14px sans-serif';
             this.label.x = this.chara.width;
@@ -60,6 +68,7 @@ HAC.define('Hacman',[
             this.update(this);
 
             this.addChild(this.hacmanFace);
+            this.addChild(this.uniform);
             this.addChild(this.chara);
             this.addChild(this.label);
             this.addChild(this.comment);
@@ -129,12 +138,6 @@ HAC.define('Hacman',[
             }
 
             return isMoved;
-        },
-
-        hitTest: function(object) {
-            var target = object.chara || object;
-
-            return object.getVisible() ? target.intersect(this.chara) : false;
         },
 
         getAngle: function() {

@@ -5,9 +5,10 @@ HAC.define('GameMain', [
     'Hacman',
     'Item',
     'ItemPoint',
+    'Goal',
     'End',
     'Cpu'
-], function(Const, utils, BaseMap, Hacman, Item, ItemPoint, End, Cpu) {
+], function(Const, utils, BaseMap, Hacman, Item, ItemPoint, Goal, End, Cpu) {
     var GameMain;
 
     GameMain = function(server) {
@@ -41,7 +42,21 @@ HAC.define('GameMain', [
         this.usersLayer = new Group();
         this.itemsLayer = new Group();
 
+        //Init goal
+        this.goalsArray = [
+            new Goal({
+                x: this.map.width-Const.world.tile*2,
+                y: Const.world.tile*7
+            }),
+            new Goal({
+                x: Const.world.tile,
+                y: Const.world.tile*7
+            })
+        ];
+
         this.rootScene.addChild(this.map);
+        this.rootScene.addChild(this.goalsArray[0]);
+        this.rootScene.addChild(this.goalsArray[1]);
         this.rootScene.addChild(this.itemsLayer);
         this.rootScene.addChild(this.usersLayer);
         this.game.pushScene(this.rootScene);
@@ -61,13 +76,21 @@ HAC.define('GameMain', [
             '_onCreateItem',
             '_onUpdateItem',
             '_onRemoveItem',
+            '_onUpdateTeam',
             '_onTimeout'
         );
 
         _this.hacmanId = _this.server.data.hacmanId;
+        _this.lastHacmanId = _this.server.data.lastHacmanId;
+        _this.teamsArray = _this.server.data.teams;
+
         _this.me = _this._onJoinUser(_this.server.data.me);
         _this.me.server = _this.server;
         _this.me.label.color = '#ff0';
+
+        //Init team
+        _this.goalsArray[0].setTeam(_this.teamsArray['team0']);
+        _this.goalsArray[1].setTeam(_this.teamsArray['team1']);
 
         //Init users
         utils.each(_this.server.data.users, function(userData) {
@@ -78,6 +101,7 @@ HAC.define('GameMain', [
             }
         });
 
+        //Init items
         utils.each(_this.server.data.items, function(itemData) {
             _this._createItem(itemData);
         });
@@ -108,6 +132,10 @@ HAC.define('GameMain', [
 
         //The item was gotten by someone
         _this.server.on('removeItem', _this._onRemoveItem);
+
+        //The item team
+        _this.server.on('updateTeam', _this._onUpdateTeam);
+
     };
 
     GameMain.prototype._onKeyPress = function(e) {
@@ -119,16 +147,31 @@ HAC.define('GameMain', [
     GameMain.prototype._onEnterFrame = function() {
         var hacmanUser,
             gotItem,
+            gotGoal,
             hitUser,
             itemAbilities = null,
             isKilled;
 
         //hacmanUser = this._getUserData(this.hacmanId);
+        gotGoal = (function(_this) {
+            var lastHacmanUser = _this._getUserData(_this.lastHacmanId);
+
+            if (_this.pointItem && lastHacmanUser) {
+                if (_this.pointItem.hitTest(_this.goalsArray[0]) && (lastHacmanUser.team.id !== _this.goalsArray[0].id)) {
+                    return _this.goalsArray[0];
+                } else if (_this.pointItem.hitTest(_this.goalsArray[1]) && (lastHacmanUser.team.id !== _this.goalsArray[1].id)) {
+                    return _this.goalsArray[1];
+                }
+            }
+        })(this);
         //isKilled = (hacmanUser && !utils.isEqual(this.hacmanId, this.me.id) && this.me.hitTest(hacmanUser)) ? true : false;
 
         if (isKilled) {
             this._killedUser();
             this._sound('kill');
+        } else if (gotGoal) {
+            this._goalUser(gotGoal);
+            this._sound('point');
         } else {
             if (this.me.move()) {
                 //this._sound('walk');
@@ -138,7 +181,6 @@ HAC.define('GameMain', [
                     itemAbilities = gotItem.abilities;
 
                     if (gotItem.type === 'Point') {
-                        //this._sound('point');
                         itemAbilities.hacman = gotItem.id;
 
                         this.server.updateItem({
@@ -226,10 +268,10 @@ HAC.define('GameMain', [
             target.update(userData);
 
             if (target.hasAbility('hacman')) {
-                this.hacmanId = target.id;
+                this._setHacmanId(target.id);
             } else {
                 if (this.hacmanId === target.id) {
-                    this.hacmanId = null;
+                    this._setHacmanId(null);
                     this.server.updateUser({
                         id: target.id,
                         item: {
@@ -271,12 +313,21 @@ HAC.define('GameMain', [
             }
 
             if (userId === this.hacmanId) {
-                this.hacmanId = null;
+                this._setHacmanId(null);
             }
 
             this.showMessage(utils.template(Const.message.user.leave, {
                 targetName: targetName
             }), 'leave');
+        }
+    };
+
+    GameMain.prototype._onUpdateTeam = function(teamData) {
+        var target = this._getGoalData(teamData.id);
+
+        this.teamsArray[teamData.id] = utils.extend(this.teamsArray[teamData.id], teamData);
+        if (target) {
+            target.update(teamData);
         }
     };
 
@@ -286,6 +337,11 @@ HAC.define('GameMain', [
         } else {
             this.isTimeout = true;
         }
+    };
+
+    GameMain.prototype._setHacmanId = function(id) {
+        this.lastHacmanId = this.hacmanId;
+        this.hacmanId = id;
     };
 
     GameMain.prototype._createItem = function(itemData) {
@@ -377,6 +433,7 @@ HAC.define('GameMain', [
             score: userData.score || 0,
             message: userData.message || '',
             item: userData.item || {},
+            team: userData.team || {},
             x: userData.x,
             y: userData.y,
             map: this.map,
@@ -428,6 +485,33 @@ HAC.define('GameMain', [
         });
 
         this._gameOver();
+    };
+
+    GameMain.prototype._goalUser = function(goal) {
+        var lastHacmanUser = this._getUserData(this.lastHacmanId);
+
+        this.server.updateUser({
+            id: this.lastHacmanId,
+            score: lastHacmanUser.score+1
+        });
+
+        this.server.updateTeam({
+            id: goal.id,
+            score: goal.score+1
+        });
+
+        this.server.removeItem(this.pointItem.id);
+    };
+
+    GameMain.prototype._getGoalData = function(teamId) {
+        var target;
+
+        utils.each(this.goalsArray, function(goal) {
+            if (goal.id === teamId) {
+                target = goal;
+            }
+        });
+        return target;
     };
 
     GameMain.prototype._sound = function(name) {

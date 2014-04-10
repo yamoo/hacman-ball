@@ -8,6 +8,7 @@ var io,
     observers,
     maxItemNum = 2,
     hacmanId,
+    lastHacmanId,
     timerDuration = 2000;
 
 itemList = [{
@@ -25,13 +26,29 @@ itemList = [{
         goal: 0
     }
 }];
+teamList = [{
+    id: 'team0',
+    color: 'red',
+    member: 0,
+    score: 0
+}, {
+    id: 'team1',
+    color: 'green',
+    member: 0,
+    score: 0
+}];
 users = {};
 observers = {};
 items = {};
+teams = {};
 pointItem = null;
 
 utils = require('./js/common/utils');
 io = require('socket.io').listen(port);
+
+utils.each(teamList, function(team) {
+    teams[team.id] = team;
+});
 
 io.sockets.on('connection', function (socket) {
 
@@ -46,6 +63,7 @@ io.sockets.on('connection', function (socket) {
             cpu: userData.cpu,
             score: 0,
             message: '',
+            team: assignTeam(),
             item: {},
             x: userData.x,
             y: userData.y
@@ -57,7 +75,9 @@ io.sockets.on('connection', function (socket) {
             me: newUser,
             users: users,
             items: items,
-            hacmanId: hacmanId
+            teams: teams,
+            hacmanId: hacmanId,
+            lastHacmanId: lastHacmanId
         });
 
         socket.broadcast.emit('joinUser', newUser);
@@ -90,7 +110,7 @@ io.sockets.on('connection', function (socket) {
                         users[hacmanId].item.hacman = false;
                         socket.broadcast.emit('updateUser', users[hacmanId]);
                     }
-                    hacmanId = target.id;
+                    setHacmanId(target.id);
                 } else {
                     if (users[target.id]) {
                         users[target.id].item.hacman = false;
@@ -98,7 +118,7 @@ io.sockets.on('connection', function (socket) {
                     }
 
                     if (hacmanId && (hacmanId === target.id)) {
-                        hacmanId = null;
+                        setHacmanId(null);
                     }
                 }
             }
@@ -147,6 +167,21 @@ io.sockets.on('connection', function (socket) {
         delete items[itemId];
     });
 
+    socket.on('updateTeam', function (teamData) {
+        var target = teams[teamData.id];
+
+        if (target) {
+            utils.update(target.score, teamData.score, function(val) {
+                target.score = val;
+            });
+            utils.update(target.member, teamData.member, function(val) {
+                target.member = val;
+            });
+        }
+
+        socket.broadcast.emit('updateTeam', teamData);
+    });
+
     socket.on('sendMessage', function (data) {
         if (data.msg === '#reset') {
             io.sockets.emit('system.reset');
@@ -165,6 +200,7 @@ io.sockets.on('connection', function (socket) {
             if (target.item.hacman) {
                 pointItem = null;
             }
+            teams[target.team.id].member--;
             delete users[socket.id];
         }
 
@@ -173,7 +209,7 @@ io.sockets.on('connection', function (socket) {
         }
 
         if (socket.id === hacmanId) {
-            hacmanId = null;
+            setHacmanId(null);
         }
     });
 
@@ -199,6 +235,24 @@ setInterval(function() {
 ***/
 }, timerDuration);
 
+function assignTeam() {
+    var assign = utils.object2Array(teams)[Math.floor(Math.random()*utils.length(teams))];
+
+    utils.each(teams, function(team) {
+        if (assign.member > team.member) {
+            assign = team;
+        }
+    });
+
+    assign.member++;
+
+    return assign;
+}
+
+function setHacmanId(id) {
+    lastHacmanId = hacmanId;
+    hacmanId = id;
+}
 
 function getPointItem() {
     var item = itemList[0];

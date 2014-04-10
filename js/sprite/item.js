@@ -5,13 +5,13 @@ HAC.define('Item',[
     var Item, settings;
 
     settings = {
-        width: 32,
-        height: 32,
+        width: Const.world.tile,
+        height: Const.world.tile,
         velocity: 4,
         noise: {
             angle: 50,
             speed: 50
-        },
+        }
     };
 
     Item = enchant.Class.create(enchant.Group, {
@@ -125,7 +125,7 @@ HAC.define('Item',[
                 angleX,
                 angleY,
                 noise;
-            
+
             if (angle === Infinity || angle === -Infinity) {
                 angleX = 0;
                 angleY = utils.getSign(angle);
@@ -185,6 +185,13 @@ HAC.define('Item',[
 
         getVisible: function() {
             return this.chara.visible;
+        },
+
+        hitTest: function(object) {
+            var target = object.chara || object,
+                isVisble = object.getVisible ? object.getVisible() : true;
+
+            return isVisble ? target.intersect(this.chara) : false;
         }
     });
 
