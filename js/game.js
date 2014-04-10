@@ -182,11 +182,6 @@ HAC.define('GameMain', [
 
                     if (gotItem.type === 'Point') {
                         itemAbilities.hacman = gotItem.id;
-
-                        this.server.updateItem({
-                            id: gotItem.id,
-                            visible: false
-                        });
                     } else {
                         this.server.removeItem(gotItem.id);
 
@@ -203,10 +198,10 @@ HAC.define('GameMain', [
 
                     if (hitUser) {
                         if (hitUser.hasAbility('hacman')) {
-                            itemAbilities = {
-                                hacman: hitUser.item.hacman
-                            };
+                            itemAbilities = itemAbilities || {};
+                            itemAbilities.hacman = this.pointItem.id;
                         } else {
+                            //yellow card
                             this._sound('end');
                         }
                     }
@@ -340,8 +335,15 @@ HAC.define('GameMain', [
     };
 
     GameMain.prototype._setHacmanId = function(id) {
+        var visible = id ? false : true;
+
         this.lastHacmanId = this.hacmanId;
         this.hacmanId = id;
+
+        this.server.updateItem({
+            id: this.pointItem.id,
+            visible: visible
+        });
     };
 
     GameMain.prototype._createItem = function(itemData) {
