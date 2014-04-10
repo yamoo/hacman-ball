@@ -1,40 +1,37 @@
 HAC.define('Hacman',[
     'utils',
     'Const',
+    'Item',
     'Comment'
-], function(utils, Const, Comment) {
+], function(utils, Const, Item, Comment) {
     var Hacman, settings;
 
     settings = {
         width: 32,
         height: 32,
         speed: 8,
-        kickedSpeed: 16,
+        itemPointSpeed: 20,
+        velocity: 4,
+        noise: {
+            angle: 50,
+            speed: 20
+        },
         timerDuration: 1000
     };
 
-    Hacman = enchant.Class.create(enchant.Group, {
+    Hacman = enchant.Class.create(Item, {
         initialize: function(options){
-            enchant.Group.call(this);
+            Item.call(this, options);
 
-            this.speed = options.speed || settings.speed;
+            utils.bind(this, 'onKicked');
+
             this.cpu = options.cpu;
 
-            this.game = options.game;
-            this.map = options.map;
-
-            this.id = options.id;
             this.name = options.name;
-            this.x = options.x || 0;
-            this.y = options.y || 0;
-            this.prev = {
-                x: 0,
-                y: 0
-            };
+            this.speed = options.speed || settings.speed;
             this.charaId = options.charaId;
             this.score = options.score || 0;
             this.item = options.item || {};
-            this.isKicked = false;
 
             this.message = options.message || '';
             this.messageTimer = null;
@@ -69,26 +66,11 @@ HAC.define('Hacman',[
             this.setLabel();
         },
 
-        kicked: function(kicker) {
-            if (this.y - kicker.y > settings.height/2) {
-                this.isKicked = 'down';
-            }
-            if (kicker.x - this.x > settings.width/2) {
-                this.isKicked = 'left';
-            }
-            if (kicker.y - this.y > settings.height/2) {
-                this.isKicked = 'up';
-            }
-            if (this.x - kicker.x > settings.width/2) {
-                this.isKicked = 'right';
-            }
-        },
-
         move: function(){
             var isMoved = false,
                 speed = this.getSpeed(),
                 pos = this.getTilePos(),
-                dir,
+                dir = '',
                 temp;
 
             temp = {
@@ -96,32 +78,29 @@ HAC.define('Hacman',[
                 y: this.y
             };
 
-            if (this.isKicked) {
-                dir = this.isKicked;
-            } else {
-
+            if (!this.locked && !this.distination) {
                 if (this.game.input.up) {
-                    dir = 'up';
+                    dir += 'U';
                 }
                 if (this.game.input.down) {
-                    dir = 'down';
+                    dir += 'D';
                 }
                 if (this.game.input.left) {
-                    dir = 'left';
+                    dir += 'L';
                 }
                 if (this.game.input.right) {
-                    dir = 'right';
+                    dir += 'R';
                 }
             }
 
-            if (dir === 'left') {
+            if (dir.indexOf('L') >= 0) {
                 if (!this.mapDirTest('left')) {
                     this.x -= speed;
                 } else {
                     this.x = pos.x;
                 }
                 isMoved = true;
-            } else if (dir === 'right') {
+            } else if (dir.indexOf('R') >= 0) {
                 if (!this.mapDirTest('right')) {
                     this.x += speed;
                 } else {
@@ -129,14 +108,14 @@ HAC.define('Hacman',[
                 }
                 isMoved = true;
             }
-            if (dir === 'up') {
+            if (dir.indexOf('U') >= 0) {
                 if (!this.mapDirTest('up')) {
                     this.y -= speed;
                 } else {
                     this.y = pos.y;
                 }
                 isMoved = true;
-            } else if (dir === 'down') {
+            } else if (dir.indexOf('D') >= 0) {
                 if (!this.mapDirTest('down')) {
                     this.y += speed;
                 } else {
@@ -147,12 +126,7 @@ HAC.define('Hacman',[
 
             if (isMoved) {
                 this.prev = temp;
-            } else {
-                if (this.isKicked) {
-                    this.isKicked = false;
-                }
             }
-
 
             return isMoved;
         },
@@ -160,11 +134,11 @@ HAC.define('Hacman',[
         hitTest: function(object) {
             var target = object.chara || object;
 
-            return target.intersect(this.chara);
+            return object.getVisible() ? target.intersect(this.chara) : false;
         },
 
         getAngle: function() {
-            return (this.prev.y - this.y) / (this.prev.x - this.x);
+            return (this.y - this.prev.y) / (this.x - this.prev.x);
         },
 
         getSpeed: function() {
@@ -209,14 +183,6 @@ HAC.define('Hacman',[
             return judge;
         },
 
-        checkRight: function() {
-            return !this.map.hitTest(this.x-speed, this.y);
-        },
-
-        checkTop: function() {
-            return !this.map.hitTest(this.x-speed, this.y);
-        },
-
         setLabel: function() {
             this.label.text = this.name + ' (' + this.score + ')';
         },
@@ -226,17 +192,11 @@ HAC.define('Hacman',[
             this.setLabel();
         },
 
-        isHacman: function() {
-            return this.hacmanFace.visible;
-        },
-
         getHacman: function() {
-            this.isHacman = true;
             this.hacmanFace.visible = true;
         },
 
         loseHacman: function() {
-            this.isHacman = false;
             this.hacmanFace.visible = false;
         },
 
@@ -253,16 +213,22 @@ HAC.define('Hacman',[
             var _this = this;
 
             _this.message += msg;
-            this.setComment();
+            _this.setComment();
 
-            clearTimeout(this.messageTimer);
-            this.messageTimer = setTimeout(function() {
+            if (msg === 'z' && _this.hasAbility('hacman')) {
+                _this._shoot();
+                this.locked = true;
+            }
+
+            clearTimeout(_this.messageTimer);
+            _this.messageTimer = setTimeout(function() {
                 _this.server.updateUser({
                     id: _this.id,
                     message: _this.message
                 });
                 _this.message = '';
-            }, this.messageTimerDuration);
+                _this.locked = false;
+            }, _this.messageTimerDuration);
         },
 
         setComment: function(msg) {
@@ -288,12 +254,14 @@ HAC.define('Hacman',[
             utils.update(_this.message, data.message, function(val) {
                 _this.setComment(val);
             });
-
+            if (data.distination) {
+                _this.distination = data.distination;
+                _this.addEventListener('enterframe', _this.onKicked);
+            }
 
             if (!utils.isEmpty(data.item)) {
 
                 _this.item = utils.extend(_this.item, data.item);
-
                 if (_this.hasAbility('hacman')) {
                     _this.getHacman();
                 } else {
@@ -311,7 +279,34 @@ HAC.define('Hacman',[
         dead: function() {
             this.removeEventListener('enterframe');
             this.remove();
-        }
+        },
+
+        _shoot: function() {
+            var angle,
+                yDir,
+                dist;
+
+            yDir = (this.y - this.prev.y > 0) ? 1 : -1;
+            angle = this.getAngle();
+            dist = this.calcDist(yDir, angle, this.getSpeed() * settings.itemPointSpeed);
+
+            this.server.updateItem({
+                id: this.item.hacman,
+                visible: true,
+                x: this.x,
+                y: this.y,
+                distination: dist
+            });
+
+            this.server.updateUser({
+                id: this.id,
+                item: {
+                    hacman: false
+                }
+            });
+        },
+
+
     });
 
     return Hacman;

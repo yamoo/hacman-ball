@@ -28,18 +28,32 @@ HAC.define('Cpu',[
         _onEnterFrame: function() {
             var target;
 
-            if (this.me.hasAbility('hacman')) {
-                target = this._getNearestUser();
-                if (!target) {
-                    target = this._isPointOnMap();
-                }
-            } else {
+            //if (!this.me.hasAbility('hacman')) {
+            //    target = this._isPointOnMap();
+            //} else {
+                target = this._getHacman();
+            //}
+
+            if (!target) {
                 target = this._isPointOnMap();
             }
 
             if (target) {
                 this._moveFor(target);
             }
+
+        },
+
+        _getHacman: function() {
+            var hacman;
+
+            utils.each(this.usersArray, function(user) {
+                if (user.hasAbility('hacman')) {
+                    hacman = user;
+                }
+            });
+
+            return hacman;
         },
 
         _getNearestUser: function() {

@@ -4,10 +4,10 @@ HAC.define('GameMain', [
     'BaseMap',
     'Hacman',
     'Item',
-    'Ball',
+    'ItemPoint',
     'End',
     'Cpu'
-], function(Const, utils, BaseMap, Hacman, Item, Ball, End, Cpu) {
+], function(Const, utils, BaseMap, Hacman, Item, ItemPoint, End, Cpu) {
     var GameMain;
 
     GameMain = function(server) {
@@ -35,6 +35,7 @@ HAC.define('GameMain', [
         this.usersArray = {};
         this.observersArray = {};
         this.itemsArray = {};
+        this.pointItem = null;
         this.rootScene = new Scene();
         this.map = new BaseMap(this.game);
         this.usersLayer = new Group();
@@ -58,6 +59,7 @@ HAC.define('GameMain', [
             '_onLoseUser',
             '_onLeaveUser',
             '_onCreateItem',
+            '_onUpdateItem',
             '_onRemoveItem',
             '_onTimeout'
         );
@@ -101,6 +103,9 @@ HAC.define('GameMain', [
         //The item created by timer
         _this.server.on('createItem', _this._onCreateItem);
 
+        //The item update
+        _this.server.on('updateItem', _this._onUpdateItem);
+
         //The item was gotten by someone
         _this.server.on('removeItem', _this._onRemoveItem);
     };
@@ -118,8 +123,8 @@ HAC.define('GameMain', [
             itemAbilities = null,
             isKilled;
 
-        hacmanUser = this._getUserData(this.hacmanId);
-        isKilled = (hacmanUser && !utils.isEqual(this.hacmanId, this.me.id) && this.me.hitTest(hacmanUser)) ? true : false;
+        //hacmanUser = this._getUserData(this.hacmanId);
+        //isKilled = (hacmanUser && !utils.isEqual(this.hacmanId, this.me.id) && this.me.hitTest(hacmanUser)) ? true : false;
 
         if (isKilled) {
             this._killedUser();
@@ -130,20 +135,20 @@ HAC.define('GameMain', [
                 gotItem = this._itemHitTest();
 
                 if (gotItem) {
-                    if (gotItem.type === 'Ball') {
-                        gotItem.kicked(this.me);
+                    itemAbilities = gotItem.abilities;
+
+                    if (gotItem.type === 'Point') {
+                        //this._sound('point');
+                        itemAbilities.hacman = gotItem.id;
 
                         this.server.updateItem({
                             id: gotItem.id,
-                            dist: gotItem.dist
+                            visible: false
                         });
                     } else {
                         this.server.removeItem(gotItem.id);
-                        itemAbilities = gotItem.abilities;
 
-                        if (gotItem.type === 'Point') {
-                            this._sound('point');
-                        } else if (gotItem.type === 'Devil') {
+                        if (gotItem.type === 'Devil') {
                             this._sound('sick');
                         } else {
                             this._sound('item');
@@ -151,8 +156,18 @@ HAC.define('GameMain', [
                     }
                 }
 
-                if (this.me.hasAbility('kick')) {
+                if (!this.me.hasAbility('hacman')) {
                     hitUser = this._userHitTest();
+
+                    if (hitUser) {
+                        if (hitUser.hasAbility('hacman')) {
+                            itemAbilities = {
+                                hacman: hitUser.item.hacman
+                            };
+                        } else {
+                            this._sound('end');
+                        }
+                    }
                 }
 
                 this.server.updateUser({
@@ -168,29 +183,29 @@ HAC.define('GameMain', [
 
         if (hitUser) {
             this._sound('kick');
+            hitUser.kicked(this.me);
 
-            if (!hitUser.isKicked) {
-                hitUser.kicked(this.me);
-            } else {
-                if (hitUser.move()) {
-                    this.server.updateUser({
-                        id: hitUser.id,
-                        x: hitUser.x,
-                        y: hitUser.y
-                    });
-                } else {
-                    hitUser = null;
-                }
-            }
+            this.server.updateUser({
+                id: hitUser.id,
+                distination: hitUser.distination
+            });
+        }
+    };
+
+    GameMain.prototype._onCreateItem = function(itemData) {
+        this._createItem(itemData);
+    };
+
+    GameMain.prototype._onUpdateItem = function(itemData) {
+        var target = this._getItemData(itemData.id);
+
+        if (target) {
+            target.update(itemData);
         }
     };
 
     GameMain.prototype._onRemoveItem = function(itemId) {
         this._removeItem(itemId);
-    };
-
-    GameMain.prototype._onCreateItem = function(itemData) {
-        this._createItem(itemData);
     };
 
     GameMain.prototype._onJoinUser = function(userData) {
@@ -276,11 +291,7 @@ HAC.define('GameMain', [
     GameMain.prototype._createItem = function(itemData) {
         var item, ItemClass;
 
-        if (itemData.type === 'Ball') {
-            ItemClass = Ball;
-        } else {
-            ItemClass = Item;
-        }
+        ItemClass = Item;
 
         item = new ItemClass({
             id: itemData.id,
@@ -289,12 +300,17 @@ HAC.define('GameMain', [
             type: itemData.type,
             frame: itemData.frame,
             abilities: itemData.abilities,
+            visible: itemData.visible,
             game: this.game,
             map: this.map
         });
 
         this._setItemData(item.id, item);
         this.itemsLayer.addChild(item);
+
+        if (itemData.type === 'Point') {
+            this.pointItem = item;
+        }
 
         return item;
     };
@@ -306,6 +322,10 @@ HAC.define('GameMain', [
         if (item) {
             this.itemsLayer.removeChild(item);
             delete this.itemsArray[itemId];
+
+            if (itemId === this.pointItem.id) {
+                this.pointItem = null;
+            }
         }
     };
 

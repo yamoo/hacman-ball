@@ -6,20 +6,29 @@ var io,
     users,
     items,
     observers,
-    maxItemNum = 1,
+    maxItemNum = 2,
     hacmanId,
     timerDuration = 2000;
 
 itemList = [{
-    type: 'Ball',
+    type: 'Point',
     frame: 0,
-    abilities: {}
+    visible: true,
+    abilities: {
+        hacman: true
+    }
+}, {
+    type: 'Goal',
+    frame: 1,
+    visible: true,
+    abilities: {
+        goal: 0
+    }
 }];
 users = {};
 observers = {};
 items = {};
 pointItem = null;
-ballItem = null;
 
 utils = require('./js/common/utils');
 io = require('socket.io').listen(port);
@@ -71,6 +80,8 @@ io.sockets.on('connection', function (socket) {
                 target.message = val;
             });
 
+            target.distination = userData.distination;
+
             if (!utils.isEmpty(userData.item)) {
                 target.item = utils.extend(target.item, userData.item);
 
@@ -105,11 +116,27 @@ io.sockets.on('connection', function (socket) {
     socket.on('createItem', function (itemData) {
         if (itemData.type === 'Point') {
             pointItem = itemData;
-        } else if (itemData.type === 'Ball') {
-            ballItem = itemData;
         }
+
         items[itemData.id] = itemData;
         socket.broadcast.emit('createItem', itemData);
+    });
+
+    socket.on('updateItem', function (itemData) {
+        var target = items[itemData.id];
+
+        if (target) {
+            utils.update(target.x, itemData.x, function(val) {
+                target.x = val;
+            });
+            utils.update(target.y, itemData.y, function(val) {
+                target.y = val;
+            });
+            target.visible = itemData.visible;
+            target.distination = itemData.distination;
+        }
+
+        socket.broadcast.emit('updateItem', itemData);
     });
 
     socket.on('removeItem', function (itemId) {
@@ -135,6 +162,9 @@ io.sockets.on('connection', function (socket) {
         socket.broadcast.emit('leaveUser', socket.id);
 
         if (target) {
+            if (target.item.hacman) {
+                pointItem = null;
+            }
             delete users[socket.id];
         }
 
@@ -154,8 +184,8 @@ setInterval(function() {
     var anyUserId = getAnyUser();
 
 
-    if (!ballItem) {
-        io.sockets.socket(anyUserId).emit('createItem', getBallItem());
+    if (!pointItem) {
+        io.sockets.socket(anyUserId).emit('createItem', getPointItem());
     }
 
 /***
@@ -169,12 +199,6 @@ setInterval(function() {
 ***/
 }, timerDuration);
 
-function getBallItem() {
-    var item = itemList[0];
-
-    item.id = getUniqueId('ball');
-    return item;
-}
 
 function getPointItem() {
     var item = itemList[0];

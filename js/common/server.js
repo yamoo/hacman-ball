@@ -65,16 +65,17 @@ HAC.define('Server',[
 
             if (!itemData.x) {
                 pos = _this.gameMain.getRandomPos();
+                //pos = {x: _this.gameMain.map.width/2, y: _this.gameMain.map.height/2};
+
                 itemData.x = pos.x;
                 itemData.y = pos.y;
                 _this.socket.emit('createItem', itemData);
             }
-
             _this.trigger('createItem', itemData);
         });
 
         _this.socket.on('updateItem', function (itemData) {
-            _this.trigger('upateItem', itemData);
+            _this.trigger('updateItem', itemData);
         });
 
         _this.socket.on('removeItem', function (itemId) {

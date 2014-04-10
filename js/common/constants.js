@@ -5,7 +5,7 @@ HAC.define('Const',[
 		server: 'http://localhost:33000',
 		//server: 'http://VLB12-28:3000',
 		storage: 'hacmanball_data_v0.1',
-		timeout: 30000,
+		timeout: 300000,
 		world: {
 			tile: 32,
 			width: 24*32,

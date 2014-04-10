@@ -11,12 +11,12 @@ HAC.define('BaseMapData',[
         '|                      |',
         '|                      |',
         '|                      |',
-        '|                      |',
-        '|                      |',
-        '|                      |',
-        '|                      |',
-        '|                      |',
-        '|                      |',
+        '└                      ┘',
+        'x                      x',
+        'x                      x',
+        'x                      x',
+        'x                      x',
+        '┌                      ┐',
         '|                      |',
         '|                      |',
         '|                      |',
@@ -26,6 +26,7 @@ HAC.define('BaseMapData',[
     ];
 
     mapping = {
+        ' ': {frame: 0, hit: 0},
         ' ': {frame: 0, hit: 0},
         'x': {frame: 0, hit: 1},
         '┌': {frame: 1, hit: 1},
