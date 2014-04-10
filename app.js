@@ -1,6 +1,6 @@
 var io,
-    port = 33000,
-    //port = 3000,
+    //port = 33333,
+    port = 3333,
     utils,
     itemList,
     users,
