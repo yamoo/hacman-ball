@@ -257,6 +257,7 @@ HAC.define('Hacman',[
             utils.update(_this.message, data.message, function(val) {
                 _this.setComment(val);
             });
+
             if (data.distination) {
                 _this.distination = data.distination;
                 _this.addEventListener('enterframe', _this.onKicked);
@@ -289,6 +290,7 @@ HAC.define('Hacman',[
                 yDir,
                 dist;
 
+
             yDir = (this.y - this.prev.y > 0) ? 1 : -1;
             angle = this.getAngle();
             dist = this.calcDist(yDir, angle, this.getSpeed() * settings.itemPointSpeed);
@@ -307,9 +309,7 @@ HAC.define('Hacman',[
                     hacman: false
                 }
             });
-        },
-
-
+        }
     });
 
     return Hacman;
